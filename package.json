@@ -1,0 +1,22 @@
+{
+  "name": "sharp-dashboard",
+  "version": "1.0.0",
+  "description": "Pipeline to process images at bulk",
+  "author": "https://github.com/surajk95",
+  "scripts": {
+    "start": "npx concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm start",
+    "start:server": "cd server && npm run start",
+    "dev": "npx concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm run build",
+    "test": "npx concurrently \"npm run test:client\" \"npm run test:server\"",
+    "test:client": "cd client && npm test",
+    "test:server": "cd server && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+} 
