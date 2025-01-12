@@ -1,0 +1,1 @@
+export const COMPRESSION_SERVER_URL = 'http://localhost:3005'; 
