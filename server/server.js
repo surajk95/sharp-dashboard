@@ -2,33 +2,42 @@ const express = require('express');
 const sharp = require('sharp');
 const multer = require('multer');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Enable CORS
 app.use(cors());
 
-// Compression endpoint
-app.post('/compress', upload.single('image'), async (req, res) => {
+// Update compression endpoint to handle multiple files
+app.post('/compress', upload.array('images'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file provided' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No image files provided' });
     }
 
-    const compressedBuffer = await sharp(req.file.buffer)
-      .jpeg({
-        quality: 80,
-        mozjpeg: true,
-      })
-      .toBuffer();
+    const compressedImages = await Promise.all(
+      req.files.map(async (file) => {
+        const compressedBuffer = await sharp(file.buffer)
+          .jpeg({
+            quality: 80,
+            mozjpeg: true,
+          })
+          .toBuffer();
 
-    res.set('Content-Type', 'image/jpeg');
-    res.send(compressedBuffer);
+        return {
+          name: file.originalname,
+          buffer: compressedBuffer
+        };
+      })
+    );
+
+    res.json(compressedImages.map(img => ({
+      name: img.name,
+      data: img.buffer.toString('base64')
+    })));
   } catch (error) {
     console.error('Compression error:', error);
-    res.status(500).json({ error: 'Error compressing image' });
+    res.status(500).json({ error: 'Error compressing images' });
   }
 });
 

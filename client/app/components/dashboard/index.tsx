@@ -6,29 +6,32 @@ import { useDropzone } from 'react-dropzone';
 interface ImageData {
   url: string;
   size: number;
+  name: string;
 }
 
 const COMPRESSION_SERVER_URL = 'http://localhost:3005';
 
 const Dashboard: FC = () => {
-  const [originalImage, setOriginalImage] = useState<ImageData | null>(null);
-  const [compressedImage, setCompressedImage] = useState<ImageData | null>(null);
+  const [originalImages, setOriginalImages] = useState<ImageData[]>([]);
+  const [compressedImages, setCompressedImages] = useState<ImageData[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    // Set original image
-    setOriginalImage({
+    const newOriginalImages = acceptedFiles.map(file => ({
       url: URL.createObjectURL(file),
       size: file.size,
-    });
+      name: file.name
+    }));
+    
+    setOriginalImages(prev => [...prev, ...newOriginalImages]);
 
     try {
       setIsCompressing(true);
+      
       const formData = new FormData();
-      formData.append('image', file);
+      acceptedFiles.forEach((file) => {
+        formData.append('images', file);
+      });
 
       const response = await fetch(`${COMPRESSION_SERVER_URL}/compress`, {
         method: 'POST',
@@ -39,13 +42,26 @@ const Dashboard: FC = () => {
         throw new Error('Compression failed');
       }
 
-      const compressedBlob = await response.blob();
-      setCompressedImage({
-        url: URL.createObjectURL(compressedBlob),
-        size: compressedBlob.size,
+      const compressedData = await response.json();
+      
+      const newCompressedImages = compressedData.map((img: { name: string, data: string }) => {
+        const binaryStr = atob(img.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'image/jpeg' });
+        
+        return {
+          url: URL.createObjectURL(blob),
+          size: blob.size,
+          name: `compressed-${img.name}`
+        };
       });
+
+      setCompressedImages(prev => [...prev, ...newCompressedImages]);
     } catch (error) {
-      console.error('Error compressing image:', error);
+      console.error('Error compressing images:', error);
     } finally {
       setIsCompressing(false);
     }
@@ -56,14 +72,12 @@ const Dashboard: FC = () => {
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
-    maxFiles: 1
   });
 
-  const handleDownload = () => {
-    if (!compressedImage) return;
+  const handleDownload = (image: ImageData) => {
     const link = document.createElement('a');
-    link.href = compressedImage.url;
-    link.download = 'compressed-image.jpg';
+    link.href = image.url;
+    link.download = image.name;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -79,51 +93,61 @@ const Dashboard: FC = () => {
       `}>
         <input {...getInputProps()} />
         {isDragActive ? (
-          <p>Drop the image here...</p>
+          <p>Drop the images here...</p>
         ) : (
-          <p>Drag & drop an image here, or click to select one</p>
+          <p>Drag & drop images here, or click to select files</p>
         )}
       </div>
 
       {isCompressing && (
         <div className="text-center text-blue-500 mb-4">
-          Compressing image...
+          Compressing images...
         </div>
       )}
 
-      {(originalImage || compressedImage) && (
+      {(originalImages.length > 0 || compressedImages.length > 0) && (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          {/* Original Image */}
-          {originalImage && (
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">Original Image</h3>
-              <img 
-                src={originalImage.url} 
-                alt="Original" 
-                className="max-w-full h-auto mb-2"
-              />
-              <p>Size: {(originalImage.size / 1024).toFixed(2)} KB</p>
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Original Images</h3>
+            <div className="space-y-4">
+              {originalImages.map((image, index) => (
+                <div key={`original-${index}`} className="border-b pb-4">
+                  <img 
+                    src={image.url} 
+                    alt={`Original ${index + 1}`} 
+                    className="max-w-full h-auto mb-2"
+                  />
+                  <p className="text-sm">
+                    {image.name} - Size: {(image.size / 1024).toFixed(2)} KB
+                  </p>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Compressed Image */}
-          {compressedImage && (
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">Compressed Image</h3>
-              <img 
-                src={compressedImage.url} 
-                alt="Compressed" 
-                className="max-w-full h-auto mb-2"
-              />
-              <p>Size: {(compressedImage.size / 1024).toFixed(2)} KB</p>
-              <button
-                onClick={handleDownload}
-                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Download Compressed Image
-              </button>
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Compressed Images</h3>
+            <div className="space-y-4">
+              {compressedImages.map((image, index) => (
+                <div key={`compressed-${index}`} className="border-b pb-4">
+                  <img 
+                    src={image.url} 
+                    alt={`Compressed ${index + 1}`} 
+                    className="max-w-full h-auto mb-2"
+                  />
+                  <p className="text-sm">
+                    {image.name} - Size: {(image.size / 1024).toFixed(2)} KB
+                  </p>
+                  <button
+                    onClick={() => handleDownload(image)}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                  >
+                    Download
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
