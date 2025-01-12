@@ -10,6 +10,7 @@ import ImageGallery from './image-gallery';
 const Dashboard: FC = () => {
   const [originalImages, setOriginalImages] = useState<ImageData[]>([]);
   const [compressedImages, setCompressedImages] = useState<ImageData[]>([]);
+  const [compressionStatus, setCompressionStatus] = useState<Map<string, boolean>>(new Map());
   const [isCompressing, setIsCompressing] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -42,28 +43,32 @@ const Dashboard: FC = () => {
       const newCompressedImages = compressedData.map(createImageFromCompressedData);
 
       setCompressedImages(prev => [...prev, ...newCompressedImages]);
+
+      // Update compression status
+      newOriginalImages.forEach(image => {
+        setCompressionStatus(prev => new Map(prev).set(image.name, true));
+      });
     } catch (error) {
       console.error('Error compressing images:', error);
+      // Update compression status to failed
+      newOriginalImages.forEach(image => {
+        setCompressionStatus(prev => new Map(prev).set(image.name, false));
+      });
     } finally {
       setIsCompressing(false);
     }
   }, []);
 
   return (
-    <div className="w-full h-full p-6">
-      <h2 className="text-2xl font-bold mb-6">Image Compression</h2>
-      
+    <div className="space-y-6">
       <ImageDropzone onDrop={onDrop} isCompressing={isCompressing} />
-
-      {(originalImages.length > 0 || compressedImages.length > 0) && (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          <ImageGallery title="Original Images" images={originalImages} />
-          <ImageGallery 
-            title="Compressed Images" 
-            images={compressedImages} 
-            showDownload={true}
-          />
-        </div>
+      
+      {originalImages.length > 0 && (
+        <ImageGallery 
+          images={originalImages} 
+          compressionStatus={compressionStatus}
+          compressedImages={compressedImages} 
+        />
       )}
     </div>
   );

@@ -19,7 +19,7 @@ app.post('/compress', upload.array('images'), async (req, res) => {
       req.files.map(async (file) => {
         const compressedBuffer = await sharp(file.buffer)
           .jpeg({
-            quality: 80,
+            quality: 10,
             mozjpeg: true,
           })
           .toBuffer();
