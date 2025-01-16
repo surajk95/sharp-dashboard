@@ -6,18 +6,26 @@ import { COMPRESSION_SERVER_URL } from '../../constants/api';
 import { createImageFromCompressedData } from '../../utils/image-utils';
 import ImageDropzone from './image-upload';
 import ImageGallery from './image-gallery';
+import CompressionSettings, { CompressionSettings as Settings } from './compression-settings';
 
 const Dashboard: FC = () => {
   const [originalImages, setOriginalImages] = useState<ImageData[]>([]);
   const [compressedImages, setCompressedImages] = useState<ImageData[]>([]);
   const [compressionStatus, setCompressionStatus] = useState<Map<string, boolean>>(new Map());
   const [isCompressing, setIsCompressing] = useState(false);
+  const [settings, setSettings] = useState<Settings>({
+    format: 'jpeg',
+    quality: 80,
+    keepExif: false,
+  });
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newOriginalImages = acceptedFiles.map(file => ({
       url: URL.createObjectURL(file),
       size: file.size,
-      name: file.name
+      name: file.name,
+      id: crypto.randomUUID(),
+      createdAt: Date.now()
     }));
     
     setOriginalImages(prev => [...prev, ...newOriginalImages]);
@@ -26,9 +34,14 @@ const Dashboard: FC = () => {
       setIsCompressing(true);
       
       const formData = new FormData();
-      acceptedFiles.forEach((file) => {
+      acceptedFiles.forEach((file, index) => {
         formData.append('images', file);
+        formData.append('imageIds', newOriginalImages[index].id);
       });
+      
+      formData.append('format', settings.format);
+      formData.append('quality', settings.quality.toString());
+      formData.append('keepExif', settings.keepExif.toString());
 
       const response = await fetch(`${COMPRESSION_SERVER_URL}/compress`, {
         method: 'POST',
@@ -40,34 +53,54 @@ const Dashboard: FC = () => {
       }
 
       const compressedData = await response.json();
-      const newCompressedImages = compressedData.map(createImageFromCompressedData);
+      const newCompressedImages = compressedData.map((data: any, index: number) => ({
+        ...createImageFromCompressedData(data),
+        id: data.id || newOriginalImages[index].id,
+        createdAt: newOriginalImages[index].createdAt
+      }));
 
       setCompressedImages(prev => [...prev, ...newCompressedImages]);
 
-      // Update compression status
       newOriginalImages.forEach(image => {
-        setCompressionStatus(prev => new Map(prev).set(image.name, true));
+        setCompressionStatus(prev => new Map(prev).set(image.id, true));
       });
     } catch (error) {
       console.error('Error compressing images:', error);
-      // Update compression status to failed
       newOriginalImages.forEach(image => {
-        setCompressionStatus(prev => new Map(prev).set(image.name, false));
+        setCompressionStatus(prev => new Map(prev).set(image.id, false));
       });
     } finally {
       setIsCompressing(false);
     }
-  }, []);
+  }, [settings]);
+
+  const handleRemoveImage = (imageToRemove: ImageData) => {
+    setCompressedImages(prev => prev.filter(img => img.id !== imageToRemove.id));
+    setCompressionStatus(prev => {
+      const newStatus = new Map(prev);
+      newStatus.delete(imageToRemove.id);
+      return newStatus;
+    });
+  };
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Image Compression</h1>
+        <CompressionSettings 
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
+      </div>
+      
       <ImageDropzone onDrop={onDrop} isCompressing={isCompressing} />
       
-      {originalImages.length > 0 && (
+      {compressedImages.length > 0 && (
         <ImageGallery 
-          images={originalImages} 
-          compressionStatus={compressionStatus}
+          originalImages={originalImages}
           compressedImages={compressedImages} 
+          compressionStatus={compressionStatus}
+          onRemoveImage={handleRemoveImage}
         />
       )}
     </div>

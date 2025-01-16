@@ -1,17 +1,25 @@
 import { ImageData } from '../types/image';
 
-export const createImageFromCompressedData = (img: { name: string; data: string }): ImageData => {
+export const createImageFromCompressedData = (
+  img: { name: string; data: string; id: string; format: string }
+): ImageData => {
   const binaryStr = atob(img.data);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
     bytes[i] = binaryStr.charCodeAt(i);
   }
-  const blob = new Blob([bytes], { type: 'image/jpeg' });
+  
+  // Remove any existing file extension from the name
+  const nameWithoutExt = img.name.replace(/\.[^/.]+$/, '');
+  
+  // Create the blob with the correct format
+  const blob = new Blob([bytes], { type: `image/${img.format}` });
   
   return {
     url: URL.createObjectURL(blob),
     size: blob.size,
-    name: `compressed-${img.name}`
+    name: `compressed-${nameWithoutExt}.${img.format}`,
+    id: img.id
   };
 };
 

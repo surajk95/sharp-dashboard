@@ -23,6 +23,7 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
   onClose,
   open
 }) => {
+  console.log(`zzzcompressedImage`, compressedImage, originalImage);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const compressionRatio = compressedImage 
     ? ((1 - compressedImage.size / originalImage.size) * 100).toFixed(1)

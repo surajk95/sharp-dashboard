@@ -8,32 +8,57 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors());
 
-// Update compression endpoint to handle multiple files
 app.post('/compress', upload.array('images'), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No image files provided' });
     }
+    // Get compression settings from request body
+    const format = req.body.format || 'jpeg';
+    const quality = parseInt(req.body.quality) || 80;
+    const keepExif = req.body.keepExif === 'true';
 
     const compressedImages = await Promise.all(
       req.files.map(async (file) => {
-        const compressedBuffer = await sharp(file.buffer)
-          .jpeg({
-            quality: 10,
-            mozjpeg: true,
-          })
-          .toBuffer();
+        let sharpInstance = sharp(file.buffer);
+        
+        // Keep EXIF data if requested
+        if (!keepExif) {
+          sharpInstance = sharpInstance.withMetadata(false);
+        }
+        // Apply format-specific compression
+        switch (format) {
+          case 'jpeg':
+            sharpInstance = sharpInstance.jpeg({ quality, mozjpeg: true });
+            break;
+          case 'png':
+            sharpInstance = sharpInstance.png({ quality });
+            break;
+          case 'webp':
+            sharpInstance = sharpInstance.webp({ quality });
+            break;
+          case 'avif':
+            sharpInstance = sharpInstance.avif({ quality });
+            break;
+          default:
+            sharpInstance = sharpInstance.jpeg({ quality });
+        }
+
+        const compressedBuffer = await sharpInstance.toBuffer();
 
         return {
           name: file.originalname,
-          buffer: compressedBuffer
+          buffer: compressedBuffer,
+          format: format,
+          id: file.id,
         };
       })
     );
 
     res.json(compressedImages.map(img => ({
       name: img.name,
-      data: img.buffer.toString('base64')
+      data: img.buffer.toString('base64'),
+      format: img.format
     })));
   } catch (error) {
     console.error('Compression error:', error);

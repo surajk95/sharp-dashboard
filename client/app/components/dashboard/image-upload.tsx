@@ -2,12 +2,12 @@ import { FC } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { DropzoneOptions } from 'react-dropzone';
 
-interface ImageDropzoneProps {
+interface ImageUploadProps {
   onDrop: DropzoneOptions['onDrop'];
   isCompressing: boolean;
 }
 
-const ImageDropzone: FC<ImageDropzoneProps> = ({ onDrop, isCompressing }) => {
+const ImageUpload: FC<ImageUploadProps> = ({ onDrop, isCompressing }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -18,7 +18,7 @@ const ImageDropzone: FC<ImageDropzoneProps> = ({ onDrop, isCompressing }) => {
   return (
     <>
       <div {...getRootProps()} className={`
-        border-2 border-dashed rounded-lg p-8 mb-6 text-center cursor-pointer
+        border-2 rounded-lg p-8 mb-6 text-center cursor-pointer
         ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}
       `}>
         <input {...getInputProps()} />
@@ -38,4 +38,4 @@ const ImageDropzone: FC<ImageDropzoneProps> = ({ onDrop, isCompressing }) => {
   );
 };
 
-export default ImageDropzone; 
+export default ImageUpload; 
