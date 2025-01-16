@@ -40,7 +40,7 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" className="fixed top-[20px] right-[20px] flex items-center gap-2">
           <Settings2 className="h-4 w-4" />
           Settings
         </Button>

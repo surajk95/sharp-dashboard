@@ -25,7 +25,7 @@ const ImageUpload: FC<ImageUploadProps> = ({ onDrop, isCompressing }) => {
         {isDragActive ? (
           <p>Drop the images here...</p>
         ) : (
-          <p>Drag & drop images here, or click to select files</p>
+          <p>Drop images here, or click to select files</p>
         )}
       </div>
 

@@ -113,7 +113,7 @@ const ImageGallery: FC<ImageGalleryProps> = ({
   };
 
   return (
-    <div className="border rounded-lg border-gray-700">
+    <div className="border rounded-lg border-gray-700 max-h-[calc(100vh-200px)] overflow-y-auto">
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="relative flex-1 max-w-md">

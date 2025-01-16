@@ -91,7 +91,7 @@ const Dashboard: FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Image Compression</h1>
+        <div className="text-2xl font-bold"></div>
         <CompressionSettings 
           settings={settings}
           onSettingsChange={setSettings}
