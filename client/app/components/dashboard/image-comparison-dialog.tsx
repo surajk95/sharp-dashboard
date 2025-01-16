@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import { ImageData } from '../../types/image';
-import { formatFileSize } from '../../utils/image-utils';
+import { formatFileSize, calculateCompressionRatio } from '../../utils/image-utils';
 import { X, Download } from 'lucide-react';
 import ReactCompareImage from 'react-compare-image';
 import {
@@ -24,11 +24,10 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
   onClose,
   open
 }) => {
-  console.log(`zzzcompressedImage`, compressedImage, originalImage);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const compressionRatio = compressedImage 
-    ? ((1 - compressedImage.size / originalImage.size) * 100).toFixed(1)
-    : 0;
+    ? calculateCompressionRatio(originalImage.size, compressedImage.size)
+    : '0';
 
   const handleFullScreenToggle = () => {
     setShowFullScreen(!showFullScreen);

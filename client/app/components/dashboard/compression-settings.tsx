@@ -18,22 +18,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-export interface CompressionSettings {
-  format: 'jpeg' | 'png' | 'webp' | 'avif';
-  quality: number;
-  keepExif: boolean;
-  askDownloadLocation: boolean;
-  usePrefix: boolean;
-  namingPattern: string;
-}
+import { CompressionSettings } from '../../types/compression-settings';
 
 interface CompressionSettingsProps {
   settings: CompressionSettings;
   onSettingsChange: (settings: CompressionSettings) => void;
 }
 
-const CompressionSettings: FC<CompressionSettingsProps> = ({
+const CompressionSettingsDialog: FC<CompressionSettingsProps> = ({
   settings,
   onSettingsChange,
 }) => {
@@ -174,10 +166,54 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
               className="col-span-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="limitDimensions" className="col-span-2 flex items-center gap-2">
+              Limit Image Dimensions
+            </Label>
+            <Switch
+              id="limitDimensions"
+              checked={settings.limitDimensions}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ ...settings, limitDimensions: checked })
+              }
+              className="col-span-2"
+            />
+          </div>
+          
+          {settings.limitDimensions && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="maxWidth" className="col-span-1">
+                Max Width
+              </Label>
+              <input
+                type="number"
+                id="maxWidth"
+                value={settings.maxWidth || 0}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  onSettingsChange({ ...settings, maxWidth: value });
+                }}
+                className="col-span-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <Label htmlFor="maxHeight" className="col-span-1">
+                Max Height
+              </Label>
+              <input
+                type="number"
+                id="maxHeight"
+                value={settings.maxHeight || 0}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  onSettingsChange({ ...settings, maxHeight: value });
+                }}
+                className="col-span-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default CompressionSettings; 
+export default CompressionSettingsDialog; 

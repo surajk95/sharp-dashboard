@@ -19,8 +19,8 @@ export const createImageFromCompressedData = (
   
   // Apply naming pattern based on settings
   const fileName = settings?.usePrefix
-    ? `${settings.namingPattern}${nameWithoutExt}.${img.format}`
-    : `${nameWithoutExt}${settings.namingPattern}.${img.format}`;
+    ? `${settings.namingPattern || 'compressed-'}${nameWithoutExt}.${img.format}`
+    : `${nameWithoutExt}${settings?.namingPattern || '-compressed'}.${img.format}`;
   
   return {
     url: URL.createObjectURL(blob),
@@ -110,4 +110,8 @@ export const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
+
+export const calculateCompressionRatio = (originalSize: number, compressedSize: number): string => {
+  return ((1 - compressedSize / originalSize) * 100).toFixed(1);
 }; 

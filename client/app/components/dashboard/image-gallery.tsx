@@ -1,9 +1,14 @@
 import { FC, useState, useMemo, useEffect } from 'react';
 import { ImageData } from '../../types/image';
-import { downloadImage, bulkDownload } from '../../utils/image-utils';
+import { 
+  downloadImage, 
+  bulkDownload, 
+  formatFileSize,
+  calculateCompressionRatio 
+} from '../../utils/image-utils';
 import { Search, ArrowUp, ArrowDown, X, Download, Trash2 } from 'lucide-react';
 import ImageComparisonDialog from './image-comparison-dialog';
-import { CompressionSettings } from './compression-settings';
+import { CompressionSettings } from '../../types/compression-settings';
 
 interface ImageGalleryProps {
   originalImages: ImageData[];
@@ -272,9 +277,13 @@ const ImageGallery: FC<ImageGalleryProps> = ({
                     title={isSuccess ? 'Compression Successful' : 'Compression Failed'}
                   />
                 </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  <span className="text-gray-100">{`${formatFileSize(image.size)}`} </span>
+                  <span className="text-gray-400">({calculateCompressionRatio(findOriginalImage(image).size, image.size)}% smaller)</span>
+                </p>
                 <button
                   onClick={() => downloadImage(image, settings.askDownloadLocation)}
-                  className="mt-2 px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs w-full"
+                  className="mt-2 px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs w-full"
                 >
                   Download
                 </button>

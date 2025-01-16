@@ -6,15 +6,19 @@ import { COMPRESSION_SERVER_URL } from '../../constants/api';
 import { createImageFromCompressedData } from '../../utils/image-utils';
 import ImageDropzone from './image-upload';
 import ImageGallery from './image-gallery';
-import CompressionSettings, { CompressionSettings as Settings } from './compression-settings';
+import { CompressionSettings } from '../../types/compression-settings';
+import CompressionSettingsDialog from './compression-settings';
 
-const defaultSettings: Settings = {
+const defaultSettings: CompressionSettings = {
   format: 'webp',
   quality: 80,
   keepExif: false,
   askDownloadLocation: false,
   usePrefix: true,
-  namingPattern: 'compressed-'
+  namingPattern: 'compressed-',
+  limitDimensions: false,
+  maxWidth: 4000,
+  maxHeight: 3000
 };
 
 const Dashboard: FC = () => {
@@ -22,7 +26,7 @@ const Dashboard: FC = () => {
   const [compressedImages, setCompressedImages] = useState<ImageData[]>([]);
   const [compressionStatus, setCompressionStatus] = useState<Map<string, boolean>>(new Map());
   const [isCompressing, setIsCompressing] = useState(false);
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [settings, setSettings] = useState<CompressionSettings>(defaultSettings);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newOriginalImages = acceptedFiles.map(file => ({
@@ -47,6 +51,11 @@ const Dashboard: FC = () => {
       formData.append('format', settings.format);
       formData.append('quality', settings.quality.toString());
       formData.append('keepExif', settings.keepExif.toString());
+      
+      if (settings.limitDimensions) {
+        formData.append('maxWidth', settings.maxWidth.toString());
+        formData.append('maxHeight', settings.maxHeight.toString());
+      }
 
       const response = await fetch(`${COMPRESSION_SERVER_URL}/compress`, {
         method: 'POST',
@@ -92,7 +101,7 @@ const Dashboard: FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="text-2xl font-bold"></div>
-        <CompressionSettings 
+        <CompressionSettingsDialog 
           settings={settings}
           onSettingsChange={setSettings}
         />
