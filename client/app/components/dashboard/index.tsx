@@ -12,7 +12,9 @@ const defaultSettings: Settings = {
   format: 'webp',
   quality: 80,
   keepExif: false,
-  askDownloadLocation: false
+  askDownloadLocation: false,
+  usePrefix: true,
+  namingPattern: 'compressed-'
 };
 
 const Dashboard: FC = () => {
@@ -57,7 +59,7 @@ const Dashboard: FC = () => {
 
       const compressedData = await response.json();
       const newCompressedImages = compressedData.map((data: any, index: number) => ({
-        ...createImageFromCompressedData(data),
+        ...createImageFromCompressedData(data, settings),
         id: data.id || newOriginalImages[index].id,
         createdAt: newOriginalImages[index].createdAt
       }));

@@ -1,7 +1,9 @@
 import { ImageData } from '../types/image';
+import { CompressionSettings } from '../types/compression-settings';
 
 export const createImageFromCompressedData = (
-  img: { name: string; data: string; id: string; format: string }
+  img: { name: string; data: string; id: string; format: string },
+  settings?: CompressionSettings
 ): ImageData => {
   const binaryStr = atob(img.data);
   const bytes = new Uint8Array(binaryStr.length);
@@ -15,10 +17,15 @@ export const createImageFromCompressedData = (
   // Create the blob with the correct format
   const blob = new Blob([bytes], { type: `image/${img.format}` });
   
+  // Apply naming pattern based on settings
+  const fileName = settings?.usePrefix
+    ? `${settings.namingPattern}${nameWithoutExt}.${img.format}`
+    : `${nameWithoutExt}${settings.namingPattern}.${img.format}`;
+  
   return {
     url: URL.createObjectURL(blob),
     size: blob.size,
-    name: `compressed-${nameWithoutExt}.${img.format}`,
+    name: fileName,
     id: img.id
   };
 };
