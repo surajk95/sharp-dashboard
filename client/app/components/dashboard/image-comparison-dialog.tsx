@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import { ImageData } from '../../types/image';
 import { formatFileSize } from '../../utils/image-utils';
-import { X } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 import ReactCompareImage from 'react-compare-image';
 import {
   Dialog,
@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
+import { downloadImage } from '../../utils/image-utils';
+import './styles.css';
 interface ImageComparisonDialogProps {
   originalImage: ImageData;
   compressedImage?: ImageData;
@@ -38,17 +39,29 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
       <Dialog open={open && !showFullScreen} onOpenChange={onClose}>
         <DialogContent className="max-w-[75vw] w-[90vw]">
           <DialogHeader>
-            <DialogTitle>Image Comparison</DialogTitle>
+            <DialogTitle>{originalImage.name}</DialogTitle>
           </DialogHeader>
           
           <div 
-            className="aspect-video w-full relative cursor-zoom-in flex items-center justify-center"
+            className="dialog-content aspect-video w-full max-w-[90vw] max-h-[80vh] relative cursor-zoom-in flex items-center justify-center overflow-hidden"
             onClick={handleFullScreenToggle}
           >
             {compressedImage ? (
               <ReactCompareImage
                 leftImage={originalImage.url}
                 rightImage={compressedImage.url}
+                leftImageAlt={originalImage.name}
+                rightImageAlt={compressedImage.name}
+                leftImageCss={{
+                  objectFit: 'contain',
+                  maxHeight: '80vh',
+                  // maxWidth: '40vw',
+                }}
+                rightImageCss={{
+                  objectFit: 'contain',
+                  maxHeight: '80vh',
+                  // maxWidth: '40vw',
+                }}
                 leftImageLabel="Original"
                 rightImageLabel="Compressed"
                 sliderLineWidth={2}
@@ -65,18 +78,30 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
             )}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-300">
-            <div className="space-y-1">
-              <p className="font-medium">Original Image</p>
-              <p>Size: {formatFileSize(originalImage.size)}</p>
-              <p>Name: {originalImage.name}</p>
-            </div>
-            {compressedImage && (
+          <div className="mt-4 flex justify-between items-end">
+            <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
               <div className="space-y-1">
-                <p className="font-medium">Compressed Image</p>
-                <p>Size: {formatFileSize(compressedImage.size)}</p>
-                <p>Compression: {compressionRatio}% smaller</p>
+                <p>Original <b>{formatFileSize(originalImage.size)}</b></p>
+                {compressedImage && (
+                  <div className="space-y-1">
+                    <p>Compressed <b>{formatFileSize(compressedImage.size)}</b></p>
+                    <p><b className="text-green-500">{compressionRatio}%</b> smaller</p>
+                  </div>
+                )}
               </div>
+            </div>
+            
+            {compressedImage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadImage(compressedImage);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </button>
             )}
           </div>
         </DialogContent>

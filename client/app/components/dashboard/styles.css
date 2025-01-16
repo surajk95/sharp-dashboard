@@ -1,0 +1,3 @@
+.dialog-content>[data-testid="container"] {
+    max-height: 100% !important;
+}
