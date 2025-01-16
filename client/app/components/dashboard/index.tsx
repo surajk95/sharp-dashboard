@@ -8,16 +8,19 @@ import ImageDropzone from './image-upload';
 import ImageGallery from './image-gallery';
 import CompressionSettings, { CompressionSettings as Settings } from './compression-settings';
 
+const defaultSettings: Settings = {
+  format: 'webp',
+  quality: 80,
+  keepExif: false,
+  askDownloadLocation: false
+};
+
 const Dashboard: FC = () => {
   const [originalImages, setOriginalImages] = useState<ImageData[]>([]);
   const [compressedImages, setCompressedImages] = useState<ImageData[]>([]);
   const [compressionStatus, setCompressionStatus] = useState<Map<string, boolean>>(new Map());
   const [isCompressing, setIsCompressing] = useState(false);
-  const [settings, setSettings] = useState<Settings>({
-    format: 'jpeg',
-    quality: 80,
-    keepExif: false,
-  });
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newOriginalImages = acceptedFiles.map(file => ({
@@ -101,6 +104,7 @@ const Dashboard: FC = () => {
           compressedImages={compressedImages} 
           compressionStatus={compressionStatus}
           onRemoveImage={handleRemoveImage}
+          settings={settings}
         />
       )}
     </div>

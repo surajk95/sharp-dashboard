@@ -1,14 +1,16 @@
 import { FC, useState, useMemo, useEffect } from 'react';
 import { ImageData } from '../../types/image';
-import { downloadImage } from '../../utils/image-utils';
+import { downloadImage, bulkDownload } from '../../utils/image-utils';
 import { Search, ArrowUp, ArrowDown, X, Download, Trash2 } from 'lucide-react';
 import ImageComparisonDialog from './image-comparison-dialog';
+import { CompressionSettings } from './compression-settings';
 
 interface ImageGalleryProps {
   originalImages: ImageData[];
   compressionStatus: Map<string, boolean>;
   compressedImages?: ImageData[];
   onRemoveImage: (image: ImageData) => void;
+  settings: CompressionSettings;
 }
 
 type SortField = 'name' | 'size' | 'date';
@@ -18,7 +20,8 @@ const ImageGallery: FC<ImageGalleryProps> = ({
   originalImages = [], 
   compressionStatus, 
   compressedImages = [],
-  onRemoveImage
+  onRemoveImage,
+  settings
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -97,9 +100,9 @@ const ImageGallery: FC<ImageGalleryProps> = ({
   };
 
   const handleBulkDownload = () => {
-    sortedAndFilteredImages
-      .filter(img => selectedImages.has(img.id))
-      .forEach(downloadImage);
+    const selectedImagesList = sortedAndFilteredImages
+      .filter(img => selectedImages.has(img.id));
+    bulkDownload(selectedImagesList, settings.askDownloadLocation);
   };
 
   const handleBulkDelete = () => {
@@ -270,7 +273,7 @@ const ImageGallery: FC<ImageGalleryProps> = ({
                   />
                 </div>
                 <button
-                  onClick={() => downloadImage(image)}
+                  onClick={() => downloadImage(image, settings.askDownloadLocation)}
                   className="mt-2 px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs w-full"
                 >
                   Download

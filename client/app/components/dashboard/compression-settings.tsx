@@ -11,12 +11,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Settings2 } from "lucide-react";
+import { Settings2, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface CompressionSettings {
   format: 'jpeg' | 'png' | 'webp' | 'avif';
   quality: number;
   keepExif: boolean;
+  askDownloadLocation: boolean;
 }
 
 interface CompressionSettingsProps {
@@ -35,13 +42,13 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
           <Settings2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Compression Settings</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="format" className="text-right">
+            <Label htmlFor="format" className="col-span-2">
               Format
             </Label>
             <Select
@@ -50,7 +57,7 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
                 onSettingsChange({ ...settings, format: value })
               }
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-2">
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
               <SelectContent>
@@ -62,10 +69,10 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="quality" className="text-right">
+            <Label htmlFor="quality" className="col-span-2">
               Quality: {settings.quality}
             </Label>
-            <div className="col-span-3">
+            <div className="col-span-2">
               <Slider
                 value={[settings.quality]}
                 min={1}
@@ -78,7 +85,7 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
             </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="keepExif" className="text-right">
+            <Label htmlFor="keepExif" className="col-span-2">
               Keep EXIF Data
             </Label>
             <Switch
@@ -87,6 +94,30 @@ const CompressionSettings: FC<CompressionSettingsProps> = ({
               onCheckedChange={(checked) =>
                 onSettingsChange({ ...settings, keepExif: checked })
               }
+              className="col-span-2"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="askDownloadLocation" className="col-span-2 flex items-center gap-2">
+              Ask Download Location
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>If you're not able to save images in a folder because of permissions, try creating a subfolder within that folder</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Label>
+            <Switch
+              id="askDownloadLocation"
+              checked={settings.askDownloadLocation}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ ...settings, askDownloadLocation: checked })
+              }
+              className="col-span-2"
             />
           </div>
         </div>
