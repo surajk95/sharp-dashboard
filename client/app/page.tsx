@@ -6,7 +6,7 @@ export default function Home() {
       <header className="flex items-center h-14 border-b">
         <h1 className="text-xl font-bold">Sharp Dashboard</h1>
       </header>
-      <main className="max-w-7xl mx-auto py-6 min-h-screen">
+      <main className="max-w-7xl mx-auto pb-6 min-h-screen">
         <Dashboard />
       </main>
       <footer className="flex items-center h-14 border-t">
