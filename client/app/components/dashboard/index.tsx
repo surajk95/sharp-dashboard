@@ -46,7 +46,6 @@ const Dashboard: FC = () => {
       formData.append('format', compressionSettings.format);
       formData.append('quality', compressionSettings.quality.toString());
       formData.append('keepExif', compressionSettings.keepExif.toString());
-      
       if (compressionSettings.limitDimensions) {
         formData.append('maxWidth', compressionSettings.maxWidth.toString());
         formData.append('maxHeight', compressionSettings.maxHeight.toString());

@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import { ImageData } from '../../types/image';
 import { formatFileSize, calculateCompressionRatio } from '../../utils/image-utils';
-import { X, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import ReactCompareImage from 'react-compare-image';
 import {
   Dialog,
@@ -54,12 +54,10 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
                 leftImageCss={{
                   objectFit: 'contain',
                   maxHeight: '80vh',
-                  // maxWidth: '40vw',
                 }}
                 rightImageCss={{
                   objectFit: 'contain',
                   maxHeight: '80vh',
-                  // maxWidth: '40vw',
                 }}
                 leftImageLabel="Original"
                 rightImageLabel="Compressed"
