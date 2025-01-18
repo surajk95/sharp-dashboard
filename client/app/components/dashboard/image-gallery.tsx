@@ -6,7 +6,7 @@ import {
   formatFileSize,
   calculateCompressionRatio 
 } from '../../utils/image-utils';
-import { Search, ArrowUp, ArrowDown, X, Download, Trash2 } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, X, Download, Trash2, Settings2 } from 'lucide-react';
 import ImageComparisonDialog from './image-comparison-dialog';
 import { CompressionSettings } from '../../types/compression-settings';
 
@@ -16,6 +16,10 @@ interface ImageGalleryProps {
   compressedImages?: ImageData[];
   onRemoveImage: (image: ImageData) => void;
   settings: CompressionSettings;
+  selectedImageIds: string[];
+  onSelectedChange: (ids: string[]) => void;
+  isAdjustingSelected?: boolean;
+  onAdjustSelected?: () => void;
 }
 
 type SortField = 'name' | 'size' | 'date';
@@ -26,17 +30,18 @@ const ImageGallery: FC<ImageGalleryProps> = ({
   compressionStatus, 
   compressedImages = [],
   onRemoveImage,
-  settings
+  settings,
+  selectedImageIds,
+  onSelectedChange,
+  onAdjustSelected
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
-  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedImages(new Set());
     setLastSelectedId(null);
   }, [compressedImages]);
 
@@ -72,7 +77,7 @@ const ImageGallery: FC<ImageGalleryProps> = ({
 
   const handleImageSelect = (imageId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    const newSelected = new Set(selectedImages);
+    let newSelected = [...selectedImageIds];
 
     if (event.shiftKey && lastSelectedId) {
       const currentIndex = sortedAndFilteredImages.findIndex(img => img.id === imageId);
@@ -81,40 +86,42 @@ const ImageGallery: FC<ImageGalleryProps> = ({
       const end = Math.max(currentIndex, lastIndex);
 
       sortedAndFilteredImages.slice(start, end + 1).forEach(img => {
-        newSelected.add(img.id);
+        if (!newSelected.includes(img.id)) {
+          newSelected.push(img.id);
+        }
       });
     } else {
-      if (newSelected.has(imageId)) {
-        newSelected.delete(imageId);
+      if (newSelected.includes(imageId)) {
+        newSelected = newSelected.filter(id => id !== imageId);
       } else {
-        newSelected.add(imageId);
+        newSelected.push(imageId);
       }
     }
 
     setLastSelectedId(imageId);
-    setSelectedImages(newSelected);
+    onSelectedChange(newSelected);
   };
 
   const handleSelectAll = () => {
-    setSelectedImages(new Set(sortedAndFilteredImages.map(img => img.id)));
+    onSelectedChange(sortedAndFilteredImages.map(img => img.id));
   };
 
   const handleDeselectAll = () => {
-    setSelectedImages(new Set());
+    onSelectedChange([]);
     setLastSelectedId(null);
   };
 
   const handleBulkDownload = () => {
     const selectedImagesList = sortedAndFilteredImages
-      .filter(img => selectedImages.has(img.id));
+      .filter(img => selectedImageIds.includes(img.id));
     bulkDownload(selectedImagesList, settings.askDownloadLocation);
   };
 
   const handleBulkDelete = () => {
     sortedAndFilteredImages
-      .filter(img => selectedImages.has(img.id))
+      .filter(img => selectedImageIds.includes(img.id))
       .forEach(onRemoveImage);
-    setSelectedImages(new Set());
+    onSelectedChange([]);
   };
 
   return (
@@ -200,7 +207,7 @@ const ImageGallery: FC<ImageGalleryProps> = ({
           >
             Deselect All
           </button>
-          {selectedImages.size > 0 && (
+          {selectedImageIds.length > 0 && (
             <>
               <button
                 onClick={handleBulkDownload}
@@ -209,6 +216,14 @@ const ImageGallery: FC<ImageGalleryProps> = ({
               >
                 <Download className="h-4 w-4" />
                 Download Selected
+              </button>
+              <button
+                onClick={onAdjustSelected}
+                className="px-3 py-1.5 border rounded-md border-gray-700 
+                  text-gray-200 hover:bg-gray-700 bg-gray-800 text-sm flex items-center gap-1"
+              >
+                <Settings2 className="h-4 w-4" />
+                Adjust Selected
               </button>
               <button
                 onClick={handleBulkDelete}
@@ -227,7 +242,7 @@ const ImageGallery: FC<ImageGalleryProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {sortedAndFilteredImages.map((image, index) => {
             const isSuccess = compressionStatus.get(image.id);
-            const isSelected = selectedImages.has(image.id);
+            const isSelected = selectedImageIds.includes(image.id);
             
             return (
               <div 
