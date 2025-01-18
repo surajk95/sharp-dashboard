@@ -37,7 +37,6 @@ const CompressionSettingsDialog: FC<CompressionSettingsDialogProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localSettings, setLocalSettings] = useState(settings);
-  console.log(isAdjusting)
   useEffect(() => {
     if (isAdjusting) {
       setIsOpen(true);
