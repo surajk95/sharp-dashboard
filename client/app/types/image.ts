@@ -4,6 +4,8 @@ export interface ImageData {
   name: string;
   id: string;
   createdAt?: number; // Unix timestamp in milliseconds
+  quality?: number;
+  format?: string;
 }
 
 export interface CompressedImageData {

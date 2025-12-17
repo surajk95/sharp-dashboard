@@ -20,6 +20,8 @@ interface ImageGalleryProps {
   onSelectedChange: (ids: string[]) => void;
   isAdjustingSelected?: boolean;
   onAdjustSelected?: () => void;
+  onAddImages?: (images: ImageData[]) => void;
+  onRecompressImages?: (images: ImageData[]) => Promise<ImageData[]>;
 }
 
 type SortField = 'name' | 'size' | 'date';
@@ -33,7 +35,9 @@ const ImageGallery: FC<ImageGalleryProps> = ({
   settings,
   selectedImageIds,
   onSelectedChange,
-  onAdjustSelected
+  onAdjustSelected,
+  onAddImages,
+  onRecompressImages
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -296,6 +300,10 @@ const ImageGallery: FC<ImageGalleryProps> = ({
                   <span className="text-gray-100">{`${formatFileSize(image.size)}`} </span>
                   <span className="text-gray-400">({calculateCompressionRatio(findOriginalImage(image).size, image.size)}% smaller)</span>
                 </p>
+                <p className="text-xs text-gray-400">
+                  {image.format && <span className="uppercase">{image.format}</span>}
+                  {image.quality && <span className="text-blue-400 font-semibold"> • Q{image.quality}</span>}
+                </p>
                 <button
                   onClick={() => downloadImage(image, settings.askDownloadLocation)}
                   className="mt-2 px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs w-full"
@@ -314,6 +322,8 @@ const ImageGallery: FC<ImageGalleryProps> = ({
           compressedImage={selectedImage}
           onClose={() => setSelectedImage(null)}
           open={!!selectedImage}
+          onSaveEdited={onAddImages}
+          onRecompressImages={onRecompressImages}
         />
       )}
     </div>
