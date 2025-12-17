@@ -324,6 +324,16 @@ const ImageGallery: FC<ImageGalleryProps> = ({
           open={!!selectedImage}
           onSaveEdited={onAddImages}
           onRecompressImages={onRecompressImages}
+          onNavigate={(direction) => {
+            const currentIndex = sortedAndFilteredImages.findIndex(img => img.id === selectedImage.id);
+            if (direction === 'prev' && currentIndex > 0) {
+              setSelectedImage(sortedAndFilteredImages[currentIndex - 1]);
+            } else if (direction === 'next' && currentIndex < sortedAndFilteredImages.length - 1) {
+              setSelectedImage(sortedAndFilteredImages[currentIndex + 1]);
+            }
+          }}
+          hasPrev={sortedAndFilteredImages.findIndex(img => img.id === selectedImage.id) > 0}
+          hasNext={sortedAndFilteredImages.findIndex(img => img.id === selectedImage.id) < sortedAndFilteredImages.length - 1}
         />
       )}
     </div>

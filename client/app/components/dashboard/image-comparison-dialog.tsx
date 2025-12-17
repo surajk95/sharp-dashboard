@@ -10,7 +10,9 @@ import {
   SplitSquareHorizontal,
   Grid2x2,
   Check,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import ReactCompareImage from 'react-compare-image';
 import {
@@ -31,6 +33,9 @@ interface ImageComparisonDialogProps {
   open: boolean;
   onSaveEdited?: (editedImages: ImageData[]) => void;
   onRecompressImages?: (images: ImageData[]) => Promise<ImageData[]>;
+  onNavigate?: (direction: 'prev' | 'next') => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
 type EditorMode = 'view' | 'crop' | 'rotate' | 'resize' | 'split';
@@ -42,7 +47,10 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
   onClose,
   open,
   onSaveEdited,
-  onRecompressImages
+  onRecompressImages,
+  onNavigate,
+  hasPrev = false,
+  hasNext = false
 }) => {
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [mode, setMode] = useState<EditorMode>('view');
@@ -72,6 +80,32 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
       img.src = compressedImage.url;
     }
   }, [open, compressedImage]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!open || !onNavigate) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't navigate if user is in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft' && hasPrev) {
+        e.preventDefault();
+        onNavigate('prev');
+      } else if (e.key === 'ArrowRight' && hasNext) {
+        e.preventDefault();
+        onNavigate('next');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onNavigate, hasPrev, hasNext, onClose]);
 
   const handleFullScreenToggle = () => {
     setShowFullScreen(!showFullScreen);
@@ -289,6 +323,30 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
 
   return (
     <>
+      {/* Navigation arrows - outside dialog content */}
+      {open && !showFullScreen && onNavigate && (
+        <>
+          {hasPrev && (
+            <button
+              onClick={() => onNavigate('prev')}
+              className="fixed left-4 top-1/2 -translate-y-1/2 z-[60] p-2 bg-gray-800 bg-opacity-90 text-white rounded-full hover:bg-gray-700 transition-colors"
+              title="Previous image (←)"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+          {hasNext && (
+            <button
+              onClick={() => onNavigate('next')}
+              className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] p-2 bg-gray-800 bg-opacity-90 text-white rounded-full hover:bg-gray-700 transition-colors"
+              title="Next image (→)"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+        </>
+      )}
+
       <Dialog open={open && !showFullScreen} onOpenChange={onClose}>
         <DialogContent className="max-w-[90vw] max-h-[95vh] overflow-auto">
           <DialogHeader>
@@ -616,22 +674,50 @@ const ImageComparisonDialog: FC<ImageComparisonDialogProps> = ({
 
       {showFullScreen && compressedImage && (
         <div 
-          className="fixed inset-0 bg-black z-50 overflow-auto cursor-zoom-out"
+          className="fixed inset-0 bg-black z-[100] flex items-center justify-center cursor-zoom-out"
           onClick={handleFullScreenToggle}
         >
-          <div className="min-w-full min-h-full p-4 flex items-center justify-center">
-            <div className="w-full h-full">
-              <ReactCompareImage
-                leftImage={originalImage.url}
-                rightImage={compressedImage.url}
-                leftImageLabel="Original"
-                rightImageLabel="Compressed"
-                sliderLineWidth={2}
-                handleSize={40}
-                sliderPositionPercentage={0.5}
-                hover
-              />
-            </div>
+          {/* Navigation arrows in fullscreen */}
+          {onNavigate && (
+            <>
+              {hasPrev && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate('prev');
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-[101] p-3 bg-gray-800 bg-opacity-90 text-white rounded-full hover:bg-gray-700 transition-colors"
+                  title="Previous image (←)"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+              )}
+              {hasNext && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate('next');
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-[101] p-3 bg-gray-800 bg-opacity-90 text-white rounded-full hover:bg-gray-700 transition-colors"
+                  title="Next image (→)"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              )}
+            </>
+          )}
+          
+          <div className="w-full h-full p-4">
+            <ReactCompareImage
+              leftImage={originalImage.url}
+              rightImage={compressedImage.url}
+              leftImageLabel="Original"
+              rightImageLabel="Compressed"
+              sliderLineWidth={2}
+              handleSize={40}
+              sliderPositionPercentage={0.5}
+              hover
+            />
           </div>
         </div>
       )}

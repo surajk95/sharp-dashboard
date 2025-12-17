@@ -2,9 +2,10 @@ import { ImageData } from '../types/image';
 import { CompressionSettings } from '../types/compression-settings';
 
 const DB_NAME = 'SharpDashboardDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Increment version to trigger upgrade
 const IMAGES_STORE = 'images';
 const SETTINGS_STORE = 'settings';
+const BLOBS_STORE = 'blobs'; // New store for blob data
 
 interface StoredState {
   originalImages: ImageData[];
@@ -12,6 +13,11 @@ interface StoredState {
   compressionStatus: [string, boolean][];
   settings: CompressionSettings;
   lastUpdated: number;
+}
+
+interface StoredImageBlob {
+  id: string;
+  data: Blob;
 }
 
 class StorageManager {
@@ -38,30 +44,58 @@ class StorageManager {
         if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
           db.createObjectStore(SETTINGS_STORE);
         }
+
+        if (!db.objectStoreNames.contains(BLOBS_STORE)) {
+          db.createObjectStore(BLOBS_STORE, { keyPath: 'id' });
+        }
       };
     });
+  }
+
+  private async blobFromUrl(url: string): Promise<Blob> {
+    const response = await fetch(url);
+    return await response.blob();
   }
 
   async saveState(state: StoredState): Promise<void> {
     if (!this.db) await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
+    // Convert blob URLs to actual blobs
+    const allImages = [...state.originalImages, ...state.compressedImages];
+    const blobPromises = allImages.map(async (img) => {
+      try {
+        const blob = await this.blobFromUrl(img.url);
+        return { id: img.id, data: blob };
+      } catch (error) {
+        console.error(`Failed to fetch blob for image ${img.id}:`, error);
+        return null;
+      }
+    });
+
+    const blobs = (await Promise.all(blobPromises)).filter(Boolean) as StoredImageBlob[];
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE], 'readwrite');
+      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE, BLOBS_STORE], 'readwrite');
       
       transaction.onerror = () => reject(transaction.error);
       transaction.oncomplete = () => resolve();
 
-      // Save images
+      // Save image metadata (without blob URLs, as they're temporary)
       const imagesStore = transaction.objectStore(IMAGES_STORE);
-      
-      // Clear existing images
       imagesStore.clear();
 
-      // Save all images (both original and compressed)
-      const allImages = [...state.originalImages, ...state.compressedImages];
       allImages.forEach(image => {
-        imagesStore.put(image);
+        const { url, ...imageWithoutUrl } = image;
+        imagesStore.put({ ...imageWithoutUrl, url: '' }); // Store empty URL, will recreate on load
+      });
+
+      // Save blobs
+      const blobsStore = transaction.objectStore(BLOBS_STORE);
+      blobsStore.clear();
+
+      blobs.forEach(blob => {
+        blobsStore.put(blob);
       });
 
       // Save state metadata
@@ -81,7 +115,7 @@ class StorageManager {
     if (!this.db) return null;
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE], 'readonly');
+      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE, BLOBS_STORE], 'readonly');
       
       transaction.onerror = () => reject(transaction.error);
 
@@ -98,9 +132,32 @@ class StorageManager {
         const imagesStore = transaction.objectStore(IMAGES_STORE);
         const imagesRequest = imagesStore.getAll();
 
-        imagesRequest.onsuccess = () => {
-          const allImages = imagesRequest.result as ImageData[];
-          const imagesMap = new Map(allImages.map(img => [img.id, img]));
+        const blobsStore = transaction.objectStore(BLOBS_STORE);
+        const blobsRequest = blobsStore.getAll();
+
+        Promise.all([
+          new Promise<ImageData[]>((res, rej) => {
+            imagesRequest.onsuccess = () => res(imagesRequest.result as ImageData[]);
+            imagesRequest.onerror = () => rej(imagesRequest.error);
+          }),
+          new Promise<StoredImageBlob[]>((res, rej) => {
+            blobsRequest.onsuccess = () => res(blobsRequest.result as StoredImageBlob[]);
+            blobsRequest.onerror = () => rej(blobsRequest.error);
+          })
+        ]).then(([images, blobs]) => {
+          // Create a map of blobs by ID
+          const blobsMap = new Map(blobs.map(blob => [blob.id, blob.data]));
+
+          // Recreate blob URLs for each image
+          const imagesWithUrls = images.map(img => {
+            const blob = blobsMap.get(img.id);
+            return {
+              ...img,
+              url: blob ? URL.createObjectURL(blob) : ''
+            };
+          });
+
+          const imagesMap = new Map(imagesWithUrls.map(img => [img.id, img]));
 
           const originalImages = stateData.originalImageIds
             .map((id: string) => imagesMap.get(id))
@@ -117,9 +174,7 @@ class StorageManager {
             settings: stateData.settings,
             lastUpdated: stateData.lastUpdated
           });
-        };
-
-        imagesRequest.onerror = () => reject(imagesRequest.error);
+        }).catch(reject);
       };
 
       stateRequest.onerror = () => reject(stateRequest.error);
@@ -131,17 +186,17 @@ class StorageManager {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE], 'readwrite');
+      const transaction = this.db!.transaction([IMAGES_STORE, SETTINGS_STORE, BLOBS_STORE], 'readwrite');
       
       transaction.onerror = () => reject(transaction.error);
       transaction.oncomplete = () => resolve();
 
       transaction.objectStore(IMAGES_STORE).clear();
       transaction.objectStore(SETTINGS_STORE).clear();
+      transaction.objectStore(BLOBS_STORE).clear();
     });
   }
 }
 
 export const storageManager = new StorageManager();
 export type { StoredState };
-
